@@ -31,7 +31,6 @@ static void add_word_counts_in_chunk(count_map_t *map, word_t *words,
   // --------- Task 4 --------- \\
   // Make this function thread-safe by using the lock
 
-  pthread_mutex_lock(lock);
   for (size_t i = 0; i < num_words; i++) {
     word_count_entry_t *w = NULL;
     HASH_FIND_STR(*map, words[i], w);
@@ -43,7 +42,6 @@ static void add_word_counts_in_chunk(count_map_t *map, word_t *words,
       HASH_ADD_STR(*map, word, w);
     }
   }
-  pthread_mutex_unlock(lock);
 }
 
 static void *counter_thread_func(void *);
@@ -63,26 +61,31 @@ static count_map_t count_words_parallel(word_t *words, size_t num_words) {
 
   size_t chunk_size = num_words / THREAD_COUNT;
 
+
   // Launch threads
   for (size_t i = 0; i < THREAD_COUNT; i++) {
     word_t *thread_arg_words = words + i * chunk_size;
     size_t thread_arg_num_words =
         chunk_size + (i == THREAD_COUNT - 1 ? num_words % THREAD_COUNT : 0);
-    threads_args[i] =
-        pack_args(&map, thread_arg_words, thread_arg_num_words, &count_mutex);
+    threads_args[i] = pack_args(&map, thread_arg_words, thread_arg_num_words, &count_mutex);
+
 
     pthread_create(&threads[i], NULL, counter_thread_func, threads_args[i]);
+
   }
 
-  for (size_t i = 0; i < THREAD_COUNT; i++) {
+  for (size_t i = 0; i < THREAD_COUNT; i++){
 
     pthread_join(threads[i], NULL);
+
   }
 
-  for (size_t i = 0; i < THREAD_COUNT; i++) {
+  for (size_t i = 0; i < THREAD_COUNT; i++){
 
     free(threads_args[i]);
+
   }
+
 
   return map;
 }
@@ -112,7 +115,7 @@ int main(void) {
   count_map_t word_map = NULL;
 
   // Task 2: Replace this function call with the parallelized version.
-  //  word_map = count_words_seq(words_in, words_in_len);
+ //  word_map = count_words_seq(words_in, words_in_len);
   word_map = count_words_parallel(words_in, words_in_len);
 
   // Print table
